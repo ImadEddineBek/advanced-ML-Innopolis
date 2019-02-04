@@ -38,7 +38,7 @@ class SVMClassifier:
 
         model_output = tf.subtract(tf.matmul(self.X, self.A), self.b)
 
-        self.loss = tf.reduce_mean(tf.maximum(0., 1 - self.y * model_output))
+        self.loss = tf.reduce_mean(tf.maximum(0., 1 - self.y * model_output))+0.001*tf.norm(self.A)
 
         self.prediction = tf.sign(model_output)
         self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.prediction, self.y),
