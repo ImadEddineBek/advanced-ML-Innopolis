@@ -53,7 +53,7 @@ class SVMClassifier:
 
         data = self._create_minibatches(minibatch_size)
         train_loss = 0
-        for i in range(epochs * len(data)):
+        for i in range(1, epochs * len(data) + 1):
             xx, yy = data[i % len(data)]
             self.sess.run(self.train_step, feed_dict={self.X: xx, self.y: yy})
             train_loss += self.sess.run(self.loss, feed_dict={self.X: xx, self.y: yy})
