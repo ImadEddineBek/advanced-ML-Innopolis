@@ -38,7 +38,7 @@ class SVMClassifier:
 
         model_output = tf.subtract(tf.matmul(self.X, self.A), self.b)
 
-        self.loss = tf.reduce_mean(tf.maximum(0., 1 - self.y * model_output))+0.001*tf.norm(self.A)
+        self.loss = tf.reduce_mean(tf.maximum(0., 1 - self.y * model_output)) + 0.001 * tf.norm(self.A)
 
         self.prediction = tf.sign(model_output)
         self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.prediction, self.y),
@@ -52,15 +52,17 @@ class SVMClassifier:
     def train(self, epochs=30, minibatch_size=256):
 
         data = self._create_minibatches(minibatch_size)
+        train_loss = 0
         for i in range(epochs * len(data)):
             xx, yy = data[i % len(data)]
             self.sess.run(self.train_step, feed_dict={self.X: xx, self.y: yy})
-            train_loss = self.sess.run(self.loss, feed_dict={self.X: xx, self.y: yy})
+            train_loss += self.sess.run(self.loss, feed_dict={self.X: xx, self.y: yy})
             accuracy = self.sess.run(self.accuracy, feed_dict={self.X: xx, self.y: yy})
             if i % len(data) == 0:
                 print("Epoch %d, loss: %.2f accuracy %.2f." % (
-                    i // (len(data)), train_loss, accuracy))
+                    i // (len(data)), train_loss / len(data), accuracy))
                 # one epoch is an iteration over the whole data set
+                train_loss = 0
 
     def predict(self, data):
         data = self._flatten_input(data)
