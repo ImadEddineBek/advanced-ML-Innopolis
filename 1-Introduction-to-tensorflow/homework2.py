@@ -64,14 +64,15 @@ class CNNClassifier:
     def train(self, epochs=10, minibatch_size=256):
         with tf.device('/cpu:0'):
             data = self._create_minibatches(minibatch_size)
+            train_loss = 0
             for i in range(epochs * len(data)):
                 xx, yy = data[i % len(data)]
                 self.sess.run(self.train_step, feed_dict={self.X: xx, self.y: yy})
-                train_loss = self.sess.run(self.loss, feed_dict={self.X: xx, self.y: yy})
+                train_loss += self.sess.run(self.loss, feed_dict={self.X: xx, self.y: yy})
                 accuracy = self.sess.run(self.accuracy, feed_dict={self.X: xx, self.y: yy})
                 if i % len(data) == 0:
                     print("Epoch %d, loss: %.2f accuracy %.2f." % (
-                        i // (len(data)), train_loss, accuracy))
+                        i // (len(data)), train_loss/len(data), accuracy))
                     # one epoch is an iteration over the whole data set
 
     def predict(self, data):
