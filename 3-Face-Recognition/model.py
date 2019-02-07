@@ -7,8 +7,9 @@ with tf.Session() as sess:
         graph_def.ParseFromString(f.read())
         sess.graph.as_default()
         tf.import_graph_def(graph_def, name='')
-input_ = tf.get_default_graph().get_tensor_by_name("Model_Input:0")
-cnn_embedding_ = tf.get_default_graph().get_tensor_by_name("Model_Output:0")
+        input_ = tf.get_default_graph().get_tensor_by_name("Model_Input:0")
+        cnn_embedding_ = tf.get_default_graph().get_tensor_by_name("Model_Output:0")
 
-print(input_)
-print(cnn_embedding_)
+        print(input_)
+        print(cnn_embedding_)
+        print(sess.run(cnn_embedding_,feed_dict={input_:}))
