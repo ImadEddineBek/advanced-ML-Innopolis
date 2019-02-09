@@ -30,12 +30,19 @@ class ModelSiamese:
         self.positive = tf.placeholder(name="positive", dtype=tf.float32, shape=(None, 2048))
         self.negative = tf.placeholder(name="negative", dtype=tf.float32, shape=(None, 2048))
 
+        self.compare = tf.placeholder(name="compared_image", dtype=tf.float32, shape=(None, 2048))
+
         self.latent_anchor = self.siamese(self.anchor)
         self.latent_positive = self.siamese(self.positive)
         self.latent_negative = self.siamese(self.negative)
+
+        self.latent_compare = self.siamese(self.compare)
+
         pos_loss = tf.nn.l2_loss(self.latent_anchor - self.latent_positive)
         neg_loss = alpha * -1 * tf.nn.l2_loss(self.latent_anchor - self.latent_negative)
         self.loss = tf.reduce_mean(tf.maximum(0., pos_loss + neg_loss))
+        self.comparison = -1 * tf.nn.l2_loss(self.latent_anchor - self.latent_compare)
+        self.decision = self.comparison > self.T
         my_opt = tf.train.AdamOptimizer(lr)
         self.train_step = my_opt.minimize(self.loss)
         init = tf.global_variables_initializer()
@@ -49,4 +56,27 @@ class ModelSiamese:
             output = tf.nn.l2_normalize(layer2, axis=1)
             return output
 
-    def train(self, epochs=500):
+    def train(self, X, y, epochs=500):
+        batches = self.generate_batches(X, y)
+        for epoch in range(epochs):
+            for batch in batches:
+                pass
+
+    def generate_batches(self, X, y, batch_size=256):
+        pos = 0
+
+        data, labels = X, y
+        n_samples = len(labels)
+
+        batches = []
+        while pos + batch_size < n_samples:
+            anchor_batch = data[pos:pos + batch_size, :]
+            anchor_labels = labels[pos:pos + batch_size]
+            anchor_batch
+            batches.append((data[pos:pos + batch_size, :], labels[pos:pos + batch_size]))
+            pos += batch_size
+
+        if pos < n_samples:
+            batches.append((data[pos:n_samples, :], labels[pos:n_samples, :]))
+
+        return batches
