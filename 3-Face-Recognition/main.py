@@ -5,7 +5,6 @@ import glob
 import numpy as np
 
 from dataloader import DataLoader
-from model import  Model
 
 def main(config):
     data_loader = DataLoader(config.dataset)

@@ -3,7 +3,7 @@ import os
 import cv2
 import glob
 import numpy as np
-from model import  Model
+from model import  ModelInception
 
 class DataLoader:
     def __init__(self,dataset):
@@ -13,7 +13,7 @@ class DataLoader:
         self.names2label = {name: label for name, label in zip(self.names, range(len(self.names)))}
         # print(self.names2label)
     def get_latent(self,weights):
-        model = Model(weights)
+        model = ModelInception(weights)
         im_size = 299
         load_image = lambda im_path: cv2.resize(cv2.imread(im_path), (im_size, im_size))
         latent_space = []
@@ -26,6 +26,6 @@ class DataLoader:
                 img = load_image(path)
                 latent = model.get_latent_space(img)
                 latent_space.append([latent.flatten(), self.names2label[name]])
-            # if progress > 10:
-            #     break
+            if progress > 10:
+                break
         return np.array(latent_space)
