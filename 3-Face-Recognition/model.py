@@ -27,6 +27,7 @@ class ModelInception:
 class ModelSiamese:
     def __init__(self, alpha=0.2, T=-0.8, lr=0.0001):
         self.T = T
+        self.counts = None
         self.sess = tf.Session()
         self.anchor = tf.placeholder(name="anchor", dtype=tf.float32, shape=(None, 2048))
         self.positive = tf.placeholder(name="positive", dtype=tf.float32, shape=(None, 2048))
@@ -59,24 +60,32 @@ class ModelSiamese:
             return output
 
     def train(self, X, y, epochs=500):
-        batches = self.generate_batches(X, y)
         self.counts = collections.Counter(y)
         for epoch in range(epochs):
-            for batch in batches:
-                pass
+            losses = 0
+            c = 0
+            for an, po, ne, la in self.generate_batches(X, y):
+                _, loss = self.sess.run([self.train_step, self.loss],
+                                        feed_dict={self.anchor: an, self.positive: po, self.negative: ne})
+                losses += loss
+                c += len(an)
+            losses /= c
+            print("epoch [%d/%d] train_loss: %.5f" % (epoch, epochs, losses))
 
-    def getPositive(self, X, Y, x, y):
+    def getPositiveNegative(self, X, Y, x, y):
         batch_count = self.check_nb_pictures(y)
         x = x[batch_count > 1]
         y = y[batch_count > 1]
         pos_batch_index = []
+        neg_batch_index = []
         for img, label in zip(x, y):
-            y1, y2 = self.getTwoRandomIndexes(Y, label)
-            if img != X[y1]:
+            y1, y2, y_neg = self.getThreeRandomIndexes(Y, label)
+            if not numpy.array_equal(img,X[y1]):
                 pos_batch_index.append(y1)
             else:
                 pos_batch_index.append(y2)
-        return x, y, numpy.array(pos_batch_index)
+            neg_batch_index.append(y_neg)
+        return x, y, X[pos_batch_index], X[neg_batch_index]
 
     def check_nb_pictures(self, y):
         batch_count = []
@@ -94,17 +103,23 @@ class ModelSiamese:
         while pos + batch_size < n_samples:
             anchor_batch = data[pos:pos + batch_size, :]
             anchor_labels = labels[pos:pos + batch_size]
-            anchor_batch, anchor_labels, pos = self.getPositive(X, y, anchor_batch, anchor_labels)
-            batches.append((anchor_batch, X[pos]))
+            anchor_batch, anchor_labels, pos, neg = self.getPositiveNegative(X, y, anchor_batch, anchor_labels)
+            batches.append((anchor_batch, pos, neg, anchor_labels))
             pos += batch_size
 
         if pos < n_samples:
-            batches.append((data[pos:n_samples, :], labels[pos:n_samples, :]))
+            anchor_batch = data[pos:n_samples, :]
+            anchor_labels = labels[pos:n_samples]
+            anchor_batch, anchor_labels, pos, neg = self.getPositiveNegative(X, y, anchor_batch, anchor_labels)
+            batches.append((anchor_batch.reshape((-1,2048)), pos.reshape((-1,2048)), neg.reshape((-1,2048)), anchor_labels))
 
         return batches
 
-    def getTwoRandomIndexes(self, Y, label):
+    def getThreeRandomIndexes(self, Y, label):
         indexes = numpy.argwhere(Y == label)
-        index1 = random.randint(0, len(indexes))
-        index2 = random.randint(0, len(indexes))
-        return indexes[index1], indexes[index2]
+        indexes_neg = numpy.argwhere(Y != label)
+        index1 = random.randint(0, len(indexes)-1)
+        index2 = random.randint(0, len(indexes)-1)
+        index3 = random.randint(0, len(indexes_neg)-1)
+
+        return indexes[index1], indexes[index2], indexes_neg[index3]

@@ -25,7 +25,7 @@ class DataLoader:
             for path in glob.glob(self.dataset + "/" + name + "/*.jpg"):
                 img = load_image(path)
                 latent = model.get_latent_space(img)
-                latent_space.append([latent.flatten(), self.names2label[name]])
-            if progress > 10:
-                break
-        return np.array(latent_space)
+                latent_space.append((latent.flatten(), self.names2label[name]))
+            # if progress > 100:
+            #     break
+        return latent_space
