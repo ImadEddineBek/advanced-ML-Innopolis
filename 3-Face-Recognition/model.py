@@ -1,5 +1,6 @@
 import tensorflow as tf
 import collections, numpy
+import random
 
 
 class ModelInception:
@@ -66,6 +67,16 @@ class ModelSiamese:
 
     def getPositive(self, X, Y, x, y):
         batch_count = self.check_nb_pictures(y)
+        x = x[batch_count > 1]
+        y = y[batch_count > 1]
+        pos_batch_index = []
+        for img, label in zip(x, y):
+            y1, y2 = self.getTwoRandomIndexes(Y, label)
+            if img != X[y1]:
+                pos_batch_index.append(y1)
+            else:
+                pos_batch_index.append(y2)
+        return x, y, numpy.array(pos_batch_index)
 
     def check_nb_pictures(self, y):
         batch_count = []
@@ -83,11 +94,17 @@ class ModelSiamese:
         while pos + batch_size < n_samples:
             anchor_batch = data[pos:pos + batch_size, :]
             anchor_labels = labels[pos:pos + batch_size]
-            anchor_batch
-            batches.append((data[pos:pos + batch_size, :], labels[pos:pos + batch_size]))
+            anchor_batch, anchor_labels, pos = self.getPositive(X, y, anchor_batch, anchor_labels)
+            batches.append((anchor_batch, X[pos]))
             pos += batch_size
 
         if pos < n_samples:
             batches.append((data[pos:n_samples, :], labels[pos:n_samples, :]))
 
         return batches
+
+    def getTwoRandomIndexes(self, Y, label):
+        indexes = numpy.argwhere(Y == label)
+        index1 = random.randint(0, len(indexes))
+        index2 = random.randint(0, len(indexes))
+        return indexes[index1], indexes[index2]
