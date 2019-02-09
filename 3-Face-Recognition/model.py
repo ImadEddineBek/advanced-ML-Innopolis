@@ -12,4 +12,5 @@ with tf.Session() as sess:
 
         print(input_)
         print(cnn_embedding_)
-        print(sess.run(cnn_embedding_,feed_dict={input_:}))
+        print(sess.run(cnn_embedding_,feed_dict={input_:5}))
+
