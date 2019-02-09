@@ -1,4 +1,5 @@
-import tensorflow as tf
-hello = tf.constant('Hello, TensorFlow!')
-sess = tf.Session()
-print(sess.run(hello))
+import sys
+print("FAILED...")
+sys.stdout.write("\033[F") #back to previous line
+sys.stdout.write("\033[K") #clear line
+print("SUCCESS!")
