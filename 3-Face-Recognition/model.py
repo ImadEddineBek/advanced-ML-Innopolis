@@ -1,4 +1,5 @@
 import tensorflow as tf
+import collections, numpy
 
 
 class ModelInception:
@@ -58,9 +59,19 @@ class ModelSiamese:
 
     def train(self, X, y, epochs=500):
         batches = self.generate_batches(X, y)
+        self.counts = collections.Counter(y)
         for epoch in range(epochs):
             for batch in batches:
                 pass
+
+    def getPositive(self, X, Y, x, y):
+        batch_count = self.check_nb_pictures(y)
+
+    def check_nb_pictures(self, y):
+        batch_count = []
+        for label in y:
+            batch_count.append(self.counts.get(label))
+        return numpy.array(batch_count)
 
     def generate_batches(self, X, y, batch_size=256):
         pos = 0
