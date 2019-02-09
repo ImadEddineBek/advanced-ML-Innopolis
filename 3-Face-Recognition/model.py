@@ -23,7 +23,9 @@ class ModelInception:
 
 
 class ModelSiamese:
-    def __init__(self, alpha):
+    def __init__(self, alpha=0.2, T=-0.8, lr=0.0001):
+        self.T = T
+        self.sess = tf.Session()
         self.anchor = tf.placeholder(name="anchor", dtype=tf.float32, shape=(None, 2048))
         self.positive = tf.placeholder(name="positive", dtype=tf.float32, shape=(None, 2048))
         self.negative = tf.placeholder(name="negative", dtype=tf.float32, shape=(None, 2048))
@@ -34,7 +36,7 @@ class ModelSiamese:
         pos_loss = tf.nn.l2_loss(self.latent_anchor - self.latent_positive)
         neg_loss = alpha * -1 * tf.nn.l2_loss(self.latent_anchor - self.latent_negative)
         self.loss = tf.reduce_mean(tf.maximum(0., pos_loss + neg_loss))
-        my_opt = tf.train.GradientDescentOptimizer(learning_rate)
+        my_opt = tf.train.AdamOptimizer(lr)
         self.train_step = my_opt.minimize(self.loss)
         init = tf.global_variables_initializer()
         self.sess.run(init)
@@ -46,3 +48,5 @@ class ModelSiamese:
             layer2 = tf.layers.dense(inputs=layer1, units=256, activation=tf.nn.sigmoid)
             output = tf.nn.l2_normalize(layer2, axis=1)
             return output
+
+    def train(self, epochs=500):
