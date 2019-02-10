@@ -125,5 +125,7 @@ class ModelSiamese:
 
         return indexes[index1], indexes[index2], indexes_neg[index3]
 
-    def validate(self, X_anchor, X_test):
-        pass
+    def validate(self, X_anchor, y_anchor, X_test, y_test):
+        decision = self.sess.run(self.decision, feed_dict={self.anchor: X_anchor, self.compare: X_test})
+        accuracy = (y_anchor == y_test) == decision
+        return accuracy.sum() / len(y_anchor)
