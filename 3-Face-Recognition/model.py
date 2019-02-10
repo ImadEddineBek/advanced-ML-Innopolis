@@ -80,7 +80,7 @@ class ModelSiamese:
         neg_batch_index = []
         for img, label in zip(x, y):
             y1, y2, y_neg = self.getThreeRandomIndexes(Y, label)
-            if not numpy.array_equal(img,X[y1]):
+            if not numpy.array_equal(img, X[y1]):
                 pos_batch_index.append(y1)
             else:
                 pos_batch_index.append(y2)
@@ -103,23 +103,27 @@ class ModelSiamese:
         while pos + batch_size < n_samples:
             anchor_batch = data[pos:pos + batch_size, :]
             anchor_labels = labels[pos:pos + batch_size]
-            anchor_batch, anchor_labels, pos, neg = self.getPositiveNegative(X, y, anchor_batch, anchor_labels)
-            batches.append((anchor_batch, pos, neg, anchor_labels))
+            anchor_batch, anchor_labels, posi, neg = self.getPositiveNegative(X, y, anchor_batch, anchor_labels)
+            batches.append((anchor_batch, posi, neg, anchor_labels))
             pos += batch_size
 
         if pos < n_samples:
             anchor_batch = data[pos:n_samples, :]
             anchor_labels = labels[pos:n_samples]
-            anchor_batch, anchor_labels, pos, neg = self.getPositiveNegative(X, y, anchor_batch, anchor_labels)
-            batches.append((anchor_batch.reshape((-1,2048)), pos.reshape((-1,2048)), neg.reshape((-1,2048)), anchor_labels))
+            anchor_batch, anchor_labels, posi, neg = self.getPositiveNegative(X, y, anchor_batch, anchor_labels)
+            batches.append(
+                (anchor_batch.reshape((-1, 2048)), posi.reshape((-1, 2048)), neg.reshape((-1, 2048)), anchor_labels))
 
         return batches
 
     def getThreeRandomIndexes(self, Y, label):
         indexes = numpy.argwhere(Y == label)
         indexes_neg = numpy.argwhere(Y != label)
-        index1 = random.randint(0, len(indexes)-1)
-        index2 = random.randint(0, len(indexes)-1)
-        index3 = random.randint(0, len(indexes_neg)-1)
+        index1 = random.randint(0, len(indexes) - 1)
+        index2 = random.randint(0, len(indexes) - 1)
+        index3 = random.randint(0, len(indexes_neg) - 1)
 
         return indexes[index1], indexes[index2], indexes_neg[index3]
+
+    def validate(self, X_anchor, X_test):
+        pass
