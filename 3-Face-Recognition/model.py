@@ -128,5 +128,7 @@ class ModelSiamese:
     def validate(self, X_anchor, X_pos, X_neg):
         decision_pos = self.sess.run(self.decision, feed_dict={self.anchor: X_anchor, self.compare: X_pos})
         decision_neg = self.sess.run(self.decision, feed_dict={self.anchor: X_anchor, self.compare: X_neg})
+        loss = self.sess.run([self.loss],
+                             feed_dict={self.anchor: X_anchor, self.positive: X_pos, self.negative: X_neg})
         accuracy = decision_pos.sum() + (1 - decision_neg).sum()
-        return accuracy / len(X_anchor)
+        return accuracy / len(X_anchor), loss
