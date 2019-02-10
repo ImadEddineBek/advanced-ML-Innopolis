@@ -59,7 +59,7 @@ class ModelSiamese:
             output = tf.nn.l2_normalize(layer2, axis=1)
             return output
 
-    def train(self, X, y, epochs=500):
+    def train(self, X, y, test_anchor=None, test_pos=None, test_neg=None, epochs=500):
         self.counts = collections.Counter(y)
         for epoch in range(epochs):
             losses = 0
@@ -70,7 +70,9 @@ class ModelSiamese:
                 losses += loss
                 c += len(an)
             losses /= c
-            print("epoch [%d/%d] train_loss: %.5f" % (epoch, epochs, losses))
+            test_acc, test_loss = self.validate(test_anchor, test_pos, test_neg)
+            print(
+                "Epoch %d, test acc %.4f, test batch loss %.4f train_loss: %.5f" % (epoch, test_acc, test_loss, losses))
 
     def getPositiveNegative(self, X, Y, x, y):
         batch_count = self.check_nb_pictures(y)
