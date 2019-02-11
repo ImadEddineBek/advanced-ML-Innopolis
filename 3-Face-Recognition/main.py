@@ -12,6 +12,7 @@ from model import ModelSiamese
 
 def main(config):
     data_loader = DataLoader(config.dataset)
+    data_loader.get_test()
     try:
         latent_space = pkl.load(open("latent_space.p", "wb"))
         print('loaded saved latent space')
