@@ -35,11 +35,14 @@ def main(config):
     y = np.array(y)
     print(X.shape)
     print(y.shape)
-    print(test)
-    a, p, n = zip(*test)
+    a, p, n = map(list, zip(*test))
+    a = np.array(a)
+    p = np.array(p)
+    n = np.array(n)
     print(a.shape, p.shape, n.shape)
+
     model = ModelSiamese()
-    model.train(X, y,a, p, n)
+    model.train(X, y, a, p, n)
 
 
 if __name__ == '__main__':
