@@ -45,7 +45,7 @@ class DataLoader:
         print("[INFO] generate latent representations of test")
         progress = 0
         for a, p, n in zip(anch, pos, neg):
-            print("progress %d/%d" % (progress, len(n)))
+            print("progress %d/%d" % (progress, 400))
             progress += 1
             for ap, pp, np in zip(glob.glob(self.dataset + "/" + a), glob.glob(self.dataset + "/" + p),
                                   glob.glob(self.dataset + "/" + n)):
@@ -53,7 +53,7 @@ class DataLoader:
                 latent = model.get_latent_space(img)
                 img2 = load_image(pp)
                 latent2 = model.get_latent_space(img2)
-                img3 = load_image(n)
+                img3 = load_image(np)
                 latent3 = model.get_latent_space(img3)
                 latent_space.append((latent.flatten(), latent2.flatten(), latent3.flatten()))
-        return anch, pos, neg
+        return latent_space

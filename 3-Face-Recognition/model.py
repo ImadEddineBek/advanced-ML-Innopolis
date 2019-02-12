@@ -25,7 +25,7 @@ class ModelInception:
 
 
 class ModelSiamese:
-    def __init__(self, alpha=0.2, T=-0.8, lr=0.0001):
+    def __init__(self, alpha=0.9, T=-0.8, lr=0.0001):
         self.T = T
         self.counts = None
         self.sess = tf.Session()
@@ -65,6 +65,9 @@ class ModelSiamese:
             losses = 0
             c = 0
             for an, po, ne, la in self.generate_batches(X, y):
+                an = numpy.squeeze(an.reshape((-1, 2048)))
+                po = numpy.squeeze(po.reshape((-1, 2048)))
+                ne = numpy.squeeze(ne.reshape((-1, 2048)))
                 _, loss = self.sess.run([self.train_step, self.loss],
                                         feed_dict={self.anchor: an, self.positive: po, self.negative: ne})
                 losses += loss
@@ -72,7 +75,8 @@ class ModelSiamese:
             losses /= c
             test_acc, test_loss = self.validate(test_anchor, test_pos, test_neg)
             print(
-                "Epoch %d, test acc %.4f, test batch loss %.4f train_loss: %.5f" % (epoch, test_acc, test_loss, losses))
+                "Epoch %d, test acc %.4f, test batch loss %.4f %d," % (epoch, test_acc, test_loss, losses))
+            # print("epoch %d, %d," % (epoch, losses))
 
     def getPositiveNegative(self, X, Y, x, y):
         batch_count = self.check_nb_pictures(y)
@@ -114,7 +118,8 @@ class ModelSiamese:
             anchor_labels = labels[pos:n_samples]
             anchor_batch, anchor_labels, posi, neg = self.getPositiveNegative(X, y, anchor_batch, anchor_labels)
             batches.append(
-                (anchor_batch.reshape((-1, 2048)), posi.reshape((-1, 2048)), neg.reshape((-1, 2048)), anchor_labels))
+                (anchor_batch.reshape((-1, 2048)), numpy.squeeze(posi.reshape((-1, 2048))),
+                 numpy.squeeze(neg.reshape((-1, 2048))), anchor_labels))
 
         return batches
 
@@ -128,6 +133,9 @@ class ModelSiamese:
         return indexes[index1], indexes[index2], indexes_neg[index3]
 
     def validate(self, X_anchor, X_pos, X_neg):
+        X_anchor = numpy.squeeze(X_anchor.reshape((-1, 2048)))
+        X_pos = numpy.squeeze(X_pos.reshape((-1, 2048)))
+        X_neg = numpy.squeeze(X_neg.reshape((-1, 2048)))
         decision_pos = self.sess.run(self.decision, feed_dict={self.anchor: X_anchor, self.compare: X_pos})
         decision_neg = self.sess.run(self.decision, feed_dict={self.anchor: X_anchor, self.compare: X_neg})
         loss = self.sess.run([self.loss],

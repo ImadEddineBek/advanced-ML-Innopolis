@@ -10,10 +10,18 @@ from dataloader import DataLoader
 from model import ModelSiamese
 import tensorflow as tf
 
+
 def main(config):
     os.environ['CUDA_VISIBLE_DEVICES'] = ''
     data_loader = DataLoader(config.dataset)
-    data_loader.get_test()
+    try:
+        test = pkl.load(open("test.p", "rb"))
+        print('loaded saved latent test')
+    except:
+        test = data_loader.get_test(weights=config.weights)
+        pkl.dump(test, open("test.p", "wb"))
+        sys.exit(-1)
+
     try:
         latent_space = pkl.load(open("latent_space.p", "rb"))
         print('loaded saved latent space')
@@ -27,8 +35,11 @@ def main(config):
     y = np.array(y)
     print(X.shape)
     print(y.shape)
+    print(test)
+    a, p, n = zip(*test)
+    print(a.shape, p.shape, n.shape)
     model = ModelSiamese()
-    model.train(X, y)
+    model.train(X, y,a, p, n)
 
 
 if __name__ == '__main__':
