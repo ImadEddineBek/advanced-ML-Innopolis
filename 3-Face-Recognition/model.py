@@ -27,7 +27,7 @@ class ModelInception:
 
 
 class ModelSiamese:
-    def __init__(self, alpha=0.2, T=0.1, lr=0.0001):
+    def __init__(self, alpha=0.2, T=0.8, lr=0.0001):
         self.first = True
         self.T = T
         self.counts = None
@@ -49,8 +49,8 @@ class ModelSiamese:
         self.pos_loss = tf.nn.l2_loss(self.latent_anchor - self.latent_positive)
         self.neg_loss = -alpha * tf.nn.l2_loss(self.latent_anchor - self.latent_negative)
 
-        self.loss = tf.reduce_mean(tf.maximum(-50.0, self.pos_loss + self.neg_loss))
-        self.comparison = tf.norm(self.latent_anchor - self.latent_compare, axis=1)
+        self.loss = tf.reduce_mean(tf.maximum(0.0, self.pos_loss + self.neg_loss))
+        self.comparison = tf.norm(self.latent_anchor - self.latent_compare, axis=1)*1000
         self.decision = self.comparison < self.T
         self.lr = tf.placeholder(name="lr", dtype=tf.float32)
         my_opt = tf.train.AdamOptimizer(self.lr)
