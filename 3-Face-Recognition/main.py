@@ -14,6 +14,7 @@ import tensorflow as tf
 def main(config):
     os.environ['CUDA_VISIBLE_DEVICES'] = ''
     data_loader = DataLoader(config.dataset)
+    tf.reset_default_graph()
     try:
         test = pkl.load(open("test.p", "rb"))
         print('loaded saved latent test')

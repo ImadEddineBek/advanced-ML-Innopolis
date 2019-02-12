@@ -27,7 +27,8 @@ class ModelInception:
 
 
 class ModelSiamese:
-    def __init__(self, alpha=0.8, T=0.1, lr=0.0001):
+    def __init__(self, alpha=0.2, T=0.1, lr=0.0001):
+        self.first = True
         self.T = T
         self.counts = None
         self.sess = tf.Session()
@@ -36,17 +37,19 @@ class ModelSiamese:
         self.negative = tf.placeholder(name="negative", dtype=tf.float32, shape=(None, 2048))
 
         self.compare = tf.placeholder(name="compared_image", dtype=tf.float32, shape=(None, 2048))
+        with tf.variable_scope('siamese') as scope:
+            self.latent_anchor = self.siamese(self.anchor)
+            scope.reuse_variables()
 
-        self.latent_anchor = self.siamese(self.anchor)
-        self.latent_positive = self.siamese(self.positive)
-        self.latent_negative = self.siamese(self.negative)
+            self.latent_positive = self.siamese(self.positive)
+            self.latent_negative = self.siamese(self.negative)
 
-        self.latent_compare = self.siamese(self.compare)
+            self.latent_compare = self.siamese(self.compare)
 
         self.pos_loss = tf.nn.l2_loss(self.latent_anchor - self.latent_positive)
-        self.neg_loss = - tf.nn.l2_loss(self.latent_anchor - self.latent_negative)
+        self.neg_loss = -alpha * tf.nn.l2_loss(self.latent_anchor - self.latent_negative)
 
-        self.loss = tf.reduce_mean(tf.maximum(0.0, self.pos_loss + self.neg_loss + alpha))
+        self.loss = tf.reduce_mean(tf.maximum(-50.0, self.pos_loss + self.neg_loss))
         self.comparison = tf.norm(self.latent_anchor - self.latent_compare, axis=1)
         self.decision = self.comparison < self.T
         self.lr = tf.placeholder(name="lr", dtype=tf.float32)
@@ -55,13 +58,13 @@ class ModelSiamese:
         init = tf.global_variables_initializer()
         self.sess.run(init)
 
+        writer = tf.summary.FileWriter('./graphs', self.sess.graph)
+        writer.close()
+
     def siamese(self, input):
-        with tf.variable_scope('siamese', reuse=tf.AUTO_REUSE):
-            x = input
-            layer1 = tf.layers.dense(name="d1", inputs=x, units=512, activation=tf.nn.sigmoid, reuse=tf.AUTO_REUSE)
-            layer2 = tf.layers.dense(name="d2", inputs=layer1, units=256, activation=tf.nn.sigmoid, reuse=tf.AUTO_REUSE)
-            output = tf.nn.l2_normalize(layer2, name="l2", axis=1)
-            return output
+        layer1 = tf.layers.dense(name="d1", inputs=input, units=512, activation=tf.nn.sigmoid)
+        layer2 = tf.layers.dense(name="d2", inputs=layer1, units=256, activation=tf.nn.sigmoid)
+        return tf.nn.l2_normalize(layer2, name="l2", axis=1)
 
     def train(self, X, y, test_anchor=None, test_pos=None, test_neg=None, epochs=500):
         self.counts = collections.Counter(y)
@@ -149,10 +152,10 @@ class ModelSiamese:
         X_neg = numpy.squeeze(X_neg.reshape((-1, 2048)))
         decision_pos, dec = self.sess.run([self.decision, self.comparison],
                                           feed_dict={self.anchor: X_anchor, self.compare: X_pos})
-        # print("dec",dec)
+        print("dec",dec.mean())
         decision_neg, dec = self.sess.run([self.decision, self.comparison],
                                           feed_dict={self.anchor: X_anchor, self.compare: X_neg})
-        # print("dec",dec)
+        print("dec",dec.mean())
 
         _, loss = self.sess.run([self.train_step, self.loss],
                                 feed_dict={self.anchor: X_anchor, self.positive: X_pos, self.negative: X_neg,
