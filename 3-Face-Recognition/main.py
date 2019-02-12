@@ -35,6 +35,7 @@ def main(config):
     y = np.array(y)
     print(X.shape)
     print(y.shape)
+
     a, p, n = map(list, zip(*test))
     a = np.array(a)
     p = np.array(p)

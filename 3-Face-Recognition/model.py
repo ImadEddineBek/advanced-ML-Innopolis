@@ -27,7 +27,7 @@ class ModelInception:
 
 
 class ModelSiamese:
-    def __init__(self, alpha=0.2, T=0.8, lr=0.0001):
+    def __init__(self, alpha=0.8, T=0.1, lr=0.0001):
         self.T = T
         self.counts = None
         self.sess = tf.Session()
@@ -43,12 +43,14 @@ class ModelSiamese:
 
         self.latent_compare = self.siamese(self.compare)
 
-        pos_loss = tf.norm(self.latent_anchor - self.latent_positive, axis=1)
-        neg_loss = alpha * -1 * tf.norm(self.latent_anchor - self.latent_negative, axis=1)
-        self.loss = tf.reduce_mean(tf.maximum(0., pos_loss + neg_loss))
+        self.pos_loss = tf.nn.l2_loss(self.latent_anchor - self.latent_positive)
+        self.neg_loss = - tf.nn.l2_loss(self.latent_anchor - self.latent_negative)
+
+        self.loss = tf.reduce_mean(tf.maximum(0.0, self.pos_loss + self.neg_loss + alpha))
         self.comparison = tf.norm(self.latent_anchor - self.latent_compare, axis=1)
-        self.decision = self.comparison > self.T
-        my_opt = tf.train.AdamOptimizer(lr)
+        self.decision = self.comparison < self.T
+        self.lr = tf.placeholder(name="lr", dtype=tf.float32)
+        my_opt = tf.train.AdamOptimizer(self.lr)
         self.train_step = my_opt.minimize(self.loss)
         init = tf.global_variables_initializer()
         self.sess.run(init)
@@ -56,13 +58,15 @@ class ModelSiamese:
     def siamese(self, input):
         with tf.variable_scope('siamese', reuse=tf.AUTO_REUSE):
             x = input
-            layer1 = tf.layers.dense(inputs=x, units=512, activation=tf.nn.sigmoid)
-            layer2 = tf.layers.dense(inputs=layer1, units=256, activation=tf.nn.sigmoid)
-            output = tf.nn.l2_normalize(layer2, axis=1)
+            layer1 = tf.layers.dense(name="d1", inputs=x, units=512, activation=tf.nn.sigmoid, reuse=tf.AUTO_REUSE)
+            layer2 = tf.layers.dense(name="d2", inputs=layer1, units=256, activation=tf.nn.sigmoid, reuse=tf.AUTO_REUSE)
+            output = tf.nn.l2_normalize(layer2, name="l2", axis=1)
             return output
 
     def train(self, X, y, test_anchor=None, test_pos=None, test_neg=None, epochs=500):
         self.counts = collections.Counter(y)
+        lr = 0.0001
+        reduction = 0.9999
         for epoch in range(epochs):
             losses = 0
             c = 0
@@ -70,12 +74,17 @@ class ModelSiamese:
                 an = numpy.squeeze(an.reshape((-1, 2048)))
                 po = numpy.squeeze(po.reshape((-1, 2048)))
                 ne = numpy.squeeze(ne.reshape((-1, 2048)))
-                _, loss = self.sess.run([self.train_step, self.loss],
-                                        feed_dict={self.anchor: an, self.positive: po, self.negative: ne})
+                _, loss, pos_loss, neg_loss, laan = self.sess.run(
+                    [self.train_step, self.loss, self.pos_loss, self.neg_loss, self.latent_anchor],
+                    feed_dict={self.anchor: an, self.positive: po,
+                               self.negative: ne, self.lr: lr})
                 losses += loss
+                # print(laan)
+                # print(pos_loss)
                 c += len(an)
-            losses /= c
-            test_acc, test_loss = self.validate(test_anchor, test_pos, test_neg)
+                # print("laan_loss", laan)
+            lr *= reduction
+            test_acc, test_loss = self.validate(test_anchor, test_pos, test_neg, lr)
             print(
                 "Epoch %d, test acc %.4f, test batch %.4f loss  %.4f," % (epoch, test_acc, test_loss, losses))
             # print("epoch %d, %d," % (epoch, losses))
@@ -134,13 +143,19 @@ class ModelSiamese:
 
         return indexes[index1], indexes[index2], indexes_neg[index3]
 
-    def validate(self, X_anchor, X_pos, X_neg):
+    def validate(self, X_anchor, X_pos, X_neg, lr):
         X_anchor = numpy.squeeze(X_anchor.reshape((-1, 2048)))
         X_pos = numpy.squeeze(X_pos.reshape((-1, 2048)))
         X_neg = numpy.squeeze(X_neg.reshape((-1, 2048)))
-        decision_pos = self.sess.run(self.decision, feed_dict={self.anchor: X_anchor, self.compare: X_pos})
-        decision_neg = self.sess.run(self.decision, feed_dict={self.anchor: X_anchor, self.compare: X_neg})
-        loss = self.sess.run(self.loss,
-                             feed_dict={self.anchor: X_anchor, self.positive: X_pos, self.negative: X_neg})
+        decision_pos, dec = self.sess.run([self.decision, self.comparison],
+                                          feed_dict={self.anchor: X_anchor, self.compare: X_pos})
+        # print("dec",dec)
+        decision_neg, dec = self.sess.run([self.decision, self.comparison],
+                                          feed_dict={self.anchor: X_anchor, self.compare: X_neg})
+        # print("dec",dec)
+
+        _, loss = self.sess.run([self.train_step, self.loss],
+                                feed_dict={self.anchor: X_anchor, self.positive: X_pos, self.negative: X_neg,
+                                           self.lr: lr})
         accuracy = decision_pos.sum() + (1 - decision_neg).sum()
         return accuracy / (2 * len(X_anchor)), loss
