@@ -29,13 +29,31 @@ class DataLoader:
                 img = load_image(path)
                 latent = model.get_latent_space(img)
                 latent_space.append((latent.flatten(), self.names2label[name]))
-            if progress > 10:
-                break
+            # if progress > 10:
+            #     break
         return latent_space
 
-    def get_test(self):
+    def get_test(self, weights):
         test = pd.read_csv("test_set.csv")
         anch = test.Anchor
         pos = test.Positive
         neg = test.Negative
-        print(anch, pos, neg)
+        model = ModelInception(weights)
+        im_size = 299
+        load_image = lambda im_path: cv2.resize(cv2.imread(im_path), (im_size, im_size))
+        latent_space = []
+        print("[INFO] generate latent representations of test")
+        progress = 0
+        for a, p, n in zip(anch, pos, neg):
+            print("progress %d/%d" % (progress, len(n)))
+            progress += 1
+            for ap, pp, np in zip(glob.glob(self.dataset + "/" + a), glob.glob(self.dataset + "/" + p),
+                                  glob.glob(self.dataset + "/" + n)):
+                img = load_image(ap)
+                latent = model.get_latent_space(img)
+                img2 = load_image(pp)
+                latent2 = model.get_latent_space(img2)
+                img3 = load_image(n)
+                latent3 = model.get_latent_space(img3)
+                latent_space.append((latent.flatten(), latent2.flatten(), latent3.flatten()))
+        return anch, pos, neg

@@ -8,13 +8,14 @@ import numpy as np
 import pickle as pkl
 from dataloader import DataLoader
 from model import ModelSiamese
-
+import tensorflow as tf
 
 def main(config):
+    os.environ['CUDA_VISIBLE_DEVICES'] = ''
     data_loader = DataLoader(config.dataset)
     data_loader.get_test()
     try:
-        latent_space = pkl.load(open("latent_space.p", "wb"))
+        latent_space = pkl.load(open("latent_space.p", "rb"))
         print('loaded saved latent space')
     except:
         latent_space = data_loader.get_latent(config.weights)
