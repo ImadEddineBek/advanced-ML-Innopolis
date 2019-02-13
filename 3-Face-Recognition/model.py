@@ -27,7 +27,7 @@ class ModelInception:
 
 
 class ModelSiamese:
-    def __init__(self, alpha=1, T=0.1, lr=0.0001):
+    def __init__(self, alpha=1.0, T=0.1, lr=0.0001):
         self.first = True
         self.T = tf.placeholder(name="T", dtype=tf.float32)
         self.counts = None
@@ -47,11 +47,11 @@ class ModelSiamese:
             self.latent_compare = self.siamese(self.compare)
 
         self.pos_loss = tf.reduce_sum(tf.pow(self.latent_anchor - self.latent_positive, 2), axis=1)
-        self.neg_loss = -1 * tf.reduce_sum(tf.pow(self.latent_anchor - self.latent_negative, 2), axis=1)
+        self.neg_loss = -tf.reduce_sum(tf.pow(self.latent_anchor - self.latent_negative, 2), axis=1)
         self.loss = tf.reduce_mean(
-            tf.maximum(0.0, self.pos_loss + self.neg_loss))
+            tf.maximum(-alpha, self.pos_loss + self.neg_loss))
         self.comparison = tf.norm(self.latent_anchor - self.latent_compare, axis=1)
-        self.decision = self.comparison > self.T
+        self.decision = self.comparison <self.T
         self.lr = tf.placeholder(name="lr", dtype=tf.float32)
         my_opt = tf.train.AdamOptimizer(self.lr)
         self.train_step = my_opt.minimize(self.loss)
@@ -62,9 +62,11 @@ class ModelSiamese:
         writer.close()
 
     def siamese(self, input):
-        layer1 = tf.layers.dense(name="d1", inputs=input, units=512, activation=tf.nn.sigmoid)
-        layer2 = tf.layers.dense(name="d2", inputs=layer1, units=256, activation=tf.nn.sigmoid)
-        return layer2 / tf.reduce_sum(tf.pow(layer2, 2), axis=1, keep_dims=True)
+        layer1 = tf.layers.dense(name="d1", inputs=input, units=512, activation=tf.nn.tanh)
+        layer2 = tf.layers.dense(name="d2", inputs=layer1, units=256, activation=tf.nn.tanh)
+        layer3 = tf.layers.dense(name="d3", inputs=layer2, units=512, activation=tf.nn.tanh)
+        layer4 = tf.layers.dense(name="d4", inputs=layer3, units=256, activation=tf.nn.tanh)
+        return layer4  # / tf.reduce_sum(tf.pow(layer2, 2), axis=1, keep_dims=True)
 
     def train(self, X, y, test_anchor=None, test_pos=None, test_neg=None, epochs=500):
         self.counts = collections.Counter(y)
@@ -86,6 +88,7 @@ class ModelSiamese:
                 # print(neg_loss)
                 # print(pos_loss)
                 c += len(an)
+                # print("aaan", an)
                 # print("laan_loss", laan)
             lr *= reduction
             test_acc, test_loss = self.validate(test_anchor, test_pos, test_neg, lr)
@@ -103,8 +106,10 @@ class ModelSiamese:
             y1, y2, y_neg = self.getThreeRandomIndexes(Y, label)
             if not numpy.array_equal(img, X[y1]):
                 pos_batch_index.append(y1)
-            else:
+            elif not numpy.array_equal(img, X[y2]):
                 pos_batch_index.append(y2)
+            else:
+                print("errrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr")
             neg_batch_index.append(y_neg)
         return x, y, X[pos_batch_index], X[neg_batch_index]
 
@@ -139,12 +144,15 @@ class ModelSiamese:
         return batches
 
     def getThreeRandomIndexes(self, Y, label):
-        indexes = numpy.argwhere(Y == label)
-        indexes_neg = numpy.argwhere(Y != label)
+        indexes = numpy.argwhere(Y == label).flatten()
+        indexes_neg = numpy.argwhere(Y != label).flatten()
         index1 = random.randint(0, len(indexes) - 1)
         index2 = random.randint(0, len(indexes) - 1)
+        while index1 == index2:
+            index2 = random.randint(0, len(indexes) - 1)
         index3 = random.randint(0, len(indexes_neg) - 1)
-
+        # print(index1, index2)
+        # print(label,Y[indexes[index1]],Y[indexes[index2]],Y[indexes_neg[index3]])
         return indexes[index1], indexes[index2], indexes_neg[index3]
 
     def validate(self, X_anchor, X_pos, X_neg, lr):
@@ -157,10 +165,11 @@ class ModelSiamese:
         decision_neg, dec = self.sess.run([self.decision, self.comparison],
                                           feed_dict={self.anchor: X_anchor, self.compare: X_neg, self.T: 0.8})
         nm = dec.mean()
-        print((pm + nm) / 2)
-        print((pdec > dec).sum())
+        men = (pm + nm) / 2
+        print(men)
+        print((pdec > dec).sum(),pdec.max(),dec.min())
         _, loss = self.sess.run([self.train_step, self.loss],
                                 feed_dict={self.anchor: X_anchor, self.positive: X_pos, self.negative: X_neg,
-                                           self.lr: lr, self.T: (pm + nm) / 2})
+                                           self.lr: lr, self.T: men})
         accuracy = decision_pos.sum() + (1 - decision_neg).sum()
         return accuracy / (2 * len(X_anchor)), loss
