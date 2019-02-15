@@ -161,16 +161,14 @@ class ModelSiamese:
         X_neg = numpy.squeeze(X_neg.reshape((-1, 2048)))
         decision_neg, dec = self.sess.run([self.decision, self.comparison],
                                           feed_dict={self.anchor: X_anchor, self.compare: X_neg, self.T: 0.8})
-        decision_neg, dec = self.sess.run([self.decision, self.comparison],
-                                          feed_dict={self.anchor: X_anchor, self.compare: X_neg, self.T: 0.8})
         decision_pos, pdec = self.sess.run([self.decision, self.comparison],
                                            feed_dict={self.anchor: X_anchor, self.compare: X_pos, self.T: 0.8})
-        pm = pdec.mean()
-
-        nm = dec.mean()
-        men = (pm + nm) / 2
-        print(men)
-        print((pdec > dec).sum(), pdec.max(), dec.max(), pdec.min(), dec.min())
+        # pm = pdec.mean()
+        #
+        # nm = dec.mean()
+        # men = (pm + nm) / 2
+        # print(men)
+        # print((pdec > dec).sum(), pdec.max(), dec.max(), pdec.min(), dec.min())
         loss = self.sess.run(self.loss,
                              feed_dict={self.anchor: X_anchor, self.positive: X_pos, self.negative: X_neg,
                                         self.lr: 0.001, self.T: 0.8})
