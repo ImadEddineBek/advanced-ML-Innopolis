@@ -27,7 +27,7 @@ class ModelInception:
 
 
 class ModelSiamese:
-    def __init__(self, alpha=1.0, T=0.1, lr=0.0001):
+    def __init__(self, alpha=0.2, T=0.1, lr=0.0001):
         self.first = True
         self.T = tf.placeholder(name="T", dtype=tf.float32)
         self.counts = None
@@ -40,18 +40,17 @@ class ModelSiamese:
         with tf.variable_scope('siamese') as scope:
             self.latent_anchor = self.siamese(self.anchor)
             scope.reuse_variables()
-
             self.latent_positive = self.siamese(self.positive)
             self.latent_negative = self.siamese(self.negative)
 
             self.latent_compare = self.siamese(self.compare)
 
-        self.pos_loss = tf.reduce_sum(tf.pow(self.latent_anchor - self.latent_positive, 2), axis=1)
-        self.neg_loss = -tf.reduce_sum(tf.pow(self.latent_anchor - self.latent_negative, 2), axis=1)
+        self.pos_loss = tf.reduce_mean(tf.norm(self.latent_anchor - self.latent_positive, axis=1))
+        self.neg_loss = tf.reduce_mean(tf.norm(self.latent_anchor - self.latent_negative, axis=1))
         self.loss = tf.reduce_mean(
-            tf.maximum(-alpha, self.pos_loss + self.neg_loss))
+            tf.maximum(0.0, self.pos_loss - self.neg_loss + alpha))
         self.comparison = tf.norm(self.latent_anchor - self.latent_compare, axis=1)
-        self.decision = self.comparison <self.T
+        self.decision = self.comparison < self.T
         self.lr = tf.placeholder(name="lr", dtype=tf.float32)
         my_opt = tf.train.AdamOptimizer(self.lr)
         self.train_step = my_opt.minimize(self.loss)
@@ -62,19 +61,19 @@ class ModelSiamese:
         writer.close()
 
     def siamese(self, input):
-        layer1 = tf.layers.dense(name="d1", inputs=input, units=512, activation=tf.nn.tanh)
-        layer2 = tf.layers.dense(name="d2", inputs=layer1, units=256, activation=tf.nn.tanh)
-        layer3 = tf.layers.dense(name="d3", inputs=layer2, units=512, activation=tf.nn.tanh)
+        layer1 = tf.layers.dense(name="d1", inputs=input, units=512, activation=tf.nn.sigmoid)
+        layer2 = tf.layers.dense(name="d2", inputs=layer1, units=256, activation=tf.nn.sigmoid)
+        layer3 = tf.layers.dense(name="d3", inputs=tf.math.l2_normalize(layer2, axis=1), units=512,
+                                 activation=tf.nn.tanh)
         layer4 = tf.layers.dense(name="d4", inputs=layer3, units=256, activation=tf.nn.tanh)
-        return layer4  # / tf.reduce_sum(tf.pow(layer2, 2), axis=1, keep_dims=True)
+        return tf.math.l2_normalize(layer4, axis=1)
 
-    def train(self, X, y, test_anchor=None, test_pos=None, test_neg=None, epochs=500):
+    def train(self, X, y, test_anchor=None, test_pos=None, test_neg=None, epochs=50000):
         self.counts = collections.Counter(y)
         lr = 0.0001
         reduction = 0.9999
         for epoch in range(epochs):
             losses = 0
-            21
             c = 0
             for an, po, ne, la in self.generate_batches(X, y):
                 an = numpy.squeeze(an.reshape((-1, 2048)))
@@ -88,8 +87,9 @@ class ModelSiamese:
                 # print(neg_loss)
                 # print(pos_loss)
                 c += len(an)
-                # print("aaan", an)
                 # print("laan_loss", laan)
+
+            print("aaan", an)
             lr *= reduction
             test_acc, test_loss = self.validate(test_anchor, test_pos, test_neg, lr)
             print(
@@ -159,17 +159,20 @@ class ModelSiamese:
         X_anchor = numpy.squeeze(X_anchor.reshape((-1, 2048)))
         X_pos = numpy.squeeze(X_pos.reshape((-1, 2048)))
         X_neg = numpy.squeeze(X_neg.reshape((-1, 2048)))
+        decision_neg, dec = self.sess.run([self.decision, self.comparison],
+                                          feed_dict={self.anchor: X_anchor, self.compare: X_neg, self.T: 0.8})
+        decision_neg, dec = self.sess.run([self.decision, self.comparison],
+                                          feed_dict={self.anchor: X_anchor, self.compare: X_neg, self.T: 0.8})
         decision_pos, pdec = self.sess.run([self.decision, self.comparison],
                                            feed_dict={self.anchor: X_anchor, self.compare: X_pos, self.T: 0.8})
         pm = pdec.mean()
-        decision_neg, dec = self.sess.run([self.decision, self.comparison],
-                                          feed_dict={self.anchor: X_anchor, self.compare: X_neg, self.T: 0.8})
+
         nm = dec.mean()
         men = (pm + nm) / 2
         print(men)
-        print((pdec > dec).sum(),pdec.max(),dec.min())
-        _, loss = self.sess.run([self.train_step, self.loss],
-                                feed_dict={self.anchor: X_anchor, self.positive: X_pos, self.negative: X_neg,
-                                           self.lr: lr, self.T: men})
+        print((pdec > dec).sum(), pdec.max(), dec.max(), pdec.min(), dec.min())
+        loss = self.sess.run(self.loss,
+                             feed_dict={self.anchor: X_anchor, self.positive: X_pos, self.negative: X_neg,
+                                        self.lr: 0.001, self.T: 0.8})
         accuracy = decision_pos.sum() + (1 - decision_neg).sum()
         return accuracy / (2 * len(X_anchor)), loss
