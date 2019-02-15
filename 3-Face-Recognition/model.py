@@ -48,7 +48,7 @@ class ModelSiamese:
         self.pos_loss = tf.reduce_mean(tf.norm(self.latent_anchor - self.latent_positive, axis=1))
         self.neg_loss = tf.reduce_mean(tf.norm(self.latent_anchor - self.latent_negative, axis=1))
         self.loss = tf.reduce_mean(
-            tf.maximum(0.0, self.pos_loss - self.neg_loss + alpha))
+            tf.maximum(0.0, self.pos_loss / self.neg_loss + alpha))
         self.comparison = tf.norm(self.latent_anchor - self.latent_compare, axis=1)
         self.decision = self.comparison < self.T
         self.lr = tf.placeholder(name="lr", dtype=tf.float32)
@@ -66,7 +66,7 @@ class ModelSiamese:
         layer3 = tf.layers.dense(name="d3", inputs=tf.math.l2_normalize(layer2, axis=1), units=512,
                                  activation=tf.nn.tanh)
         layer4 = tf.layers.dense(name="d4", inputs=layer3, units=256, activation=tf.nn.tanh)
-        return tf.math.l2_normalize(layer4, axis=1)
+        return layer4  # tf.math.l2_normalize(layer4, axis=1)
 
     def train(self, X, y, test_anchor=None, test_pos=None, test_neg=None, epochs=50000):
         self.counts = collections.Counter(y)
@@ -160,15 +160,17 @@ class ModelSiamese:
         X_pos = numpy.squeeze(X_pos.reshape((-1, 2048)))
         X_neg = numpy.squeeze(X_neg.reshape((-1, 2048)))
         decision_neg, dec = self.sess.run([self.decision, self.comparison],
-                                          feed_dict={self.anchor: X_anchor, self.compare: X_neg, self.T: 0.8})
+                                          feed_dict={self.anchor: X_anchor, self.compare: X_neg, self.T: 0.1})
+        decision_neg, dec = self.sess.run([self.decision, self.comparison],
+                                          feed_dict={self.anchor: X_anchor, self.compare: X_neg, self.T: dec.mean()})
         decision_pos, pdec = self.sess.run([self.decision, self.comparison],
-                                           feed_dict={self.anchor: X_anchor, self.compare: X_pos, self.T: 0.8})
-        # pm = pdec.mean()
-        #
-        # nm = dec.mean()
-        # men = (pm + nm) / 2
-        # print(men)
-        # print((pdec > dec).sum(), pdec.max(), dec.max(), pdec.min(), dec.min())
+                                           feed_dict={self.anchor: X_anchor, self.compare: X_pos, self.T: dec.mean()})
+        pm = pdec.mean()
+
+        nm = dec.mean()
+        men = (pm + nm) / 2
+        print(men)
+        print((pdec > dec).sum(), pdec.max(), dec.max(), pdec.min(), dec.min())
         loss = self.sess.run(self.loss,
                              feed_dict={self.anchor: X_anchor, self.positive: X_pos, self.negative: X_neg,
                                         self.lr: 0.001, self.T: 0.8})
