@@ -21,7 +21,7 @@ def main(config):
     except:
         test = data_loader.get_test(weights=config.weights)
         pkl.dump(test, open("test.p", "wb"))
-        sys.exit(-1)
+        # sys.exit(-1)
 
     try:
         latent_space = pkl.load(open("latent_space.p", "rb"))
@@ -29,7 +29,7 @@ def main(config):
     except:
         latent_space = data_loader.get_latent(config.weights)
         pkl.dump(latent_space, open("latent_space.p", "wb"))
-        sys.exit(-1)
+        # sys.exit(-1)
 
     X, y = zip(*latent_space)
     X = np.array(X)
