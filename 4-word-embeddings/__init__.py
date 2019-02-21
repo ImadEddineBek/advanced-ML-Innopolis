@@ -16,21 +16,24 @@ class Vocabulary:
             # pass
         # print(corpus_file.readline())
         most_freq = counter.most_common(n)
-        words, frequencies = zip(*most_freq)
-        print(words)
+        self.words, self.frequencies = zip(*most_freq)
+        self.words_to_ints = {w: i for w, i in zip(self.words, range(len(self.words)))}
+        # print(self.words_to_ints)
+        # print(self.word_freq("the"))
 
-    def cal_freq(self):
-        pass
+    def word_freq(self,word):
+        index = self.word_to_int(word)
+        return self.frequencies[index]
 
     def generate_neg(self):
         pass
 
-    def word_to_int(self):
-        pass
+    def word_to_int(self,word):
+        return self.words_to_ints.get(word)
 
 
 def main():
-    vocab = Vocabulary("wikipedia_sample_tiny.txt", 50)
+    vocab = Vocabulary("wikipedia_sample_tiny.txt", 5)
 
 
 if __name__ == '__main__':
