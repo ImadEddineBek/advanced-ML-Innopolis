@@ -17,15 +17,14 @@ class Vocabulary:
         unigram = self.frequencies / sum(self.frequencies)
 
         modified_unigram = np.power(unigram, 3 / 4)
-        modified_unigram_weighs = modified_unigram / sum(modified_unigram)
-
-        neg = np.random.choice(range(len(self.words)), 5, p=modified_unigram_weighs)
-        for n in neg:
-            print(self.int_to_word(n))
+        self.modified_unigram_weighs = modified_unigram / sum(modified_unigram)
 
     def word_freq(self, word):
         index = self.word_to_int(word)
         return self.frequencies[index]
+
+    def get_neg_sample(self, context_size=5):
+        return np.random.choice(range(len(self.words)), context_size, p=self.modified_unigram_weighs)
 
     def generate_neg(self):
         pass
