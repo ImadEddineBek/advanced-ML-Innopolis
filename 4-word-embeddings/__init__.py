@@ -137,7 +137,7 @@ class Model:
             _, loss, merged, _ = self.sess.run(
                 [self.optimizer, self.loss, self.merged, self.emb],
                 feed_dict={self.center: center, self.word: words, self.label: labels})
-            print(loss)
+            print("loss",loss)
             self.train_writer.add_summary(merged, i)
 
         self.saver.save(self.sess, os.path.join(self.LOG_DIR, 'model.ckpt'))
