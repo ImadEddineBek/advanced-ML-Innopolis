@@ -6,9 +6,9 @@ class Vocabulary:
     def __init__(self, corpus_location, n):
         corpus_file = open(corpus_location, "r")
         counter = Counter()
-        lines = corpus_file.readlines()
+        self.lines = corpus_file.readlines()
         # while line != None:
-        for line in lines:
+        for line in self.lines:
             counter.update(line.split())
         most_freq = counter.most_common(n)
         self.words, self.frequencies = zip(*most_freq)
@@ -41,13 +41,40 @@ class Vocabulary:
         return np.array(batch)
 
     def get_next_context(self, context_size):
-        # self.line
-        return None, [None]
+        line = self.lines[self.line_index]
+        center = line[self.in_line_index]
+        center = self.word_to_int(center)
+        if center == -1:
+            beg_index = self.in_line_index - context_size if self.in_line_index - context_size >= 0 else 0
+            end_index = self.in_line_index
+            prev = line[beg_index:end_index]
+            beg_index = self.in_line_index + 1 if self.in_line_index + 1 < len(line) else -1
+            end_index = self.in_line_index + 1 + context_size if self.in_line_index + 1 + context_size < len(
+                line) else -1
+            nex = line[beg_index:end_index]
+            pos = prev + nex
+            pos = [self.word_to_int(w) for w in pos]
+            while -1 in pos:
+                pos.remove(-1)
+            self.update_indecies()
+            return center, pos
+        else:
+            self.update_indecies()
+            return self.get_next_context(context_size)
 
     def update_indecies(self):
-        pass
+        lengh_of_current_line = len(self.lines[self.line_index])
+        self.in_line_index += 1
+        if self.in_line_index < lengh_of_current_line:
+            return
+        self.in_line_index = 0
+        self.line_index += 1
+        if self.line_index < len(self.lines):
+            return
+        self.line_index = 0
+
     def word_to_int(self, word):
-        return self.words_to_ints.get(word)
+        return self.words_to_ints.get(word, -1)
 
     def int_to_word(self, i):
         return self.words[i]
@@ -55,6 +82,8 @@ class Vocabulary:
     def is_most_common(self, word):
         return word in self.words
 
+class Model:
+    def __init__(self):
 
 def main():
     vocab = Vocabulary("wikipedia_sample_tiny.txt", 50)
