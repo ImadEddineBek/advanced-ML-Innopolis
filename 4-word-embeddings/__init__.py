@@ -111,17 +111,12 @@ class Model:
                 tf.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0), name="W_IN")
             self.W_OUT = tf.Variable(
                 tf.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0), name="W_OUT")
-            self.u = tf.nn.embedding_lookup(params=self.W_IN, ids=self.center,name='embeddings/W_IN')
-            self.v = tf.nn.embedding_lookup(params=self.W_OUT, ids=self.word,name='embeddings/W_OUT')
+            self.u = tf.nn.embedding_lookup(params=self.W_IN, ids=self.center, name='embeddings/W_IN')
+            self.v = tf.nn.embedding_lookup(params=self.W_OUT, ids=self.word, name='embeddings/W_OUT')
             logits = tf.reduce_sum(self.u * self.v, axis=1)
 
         self.loss = tf.reduce_mean(sig(logits=logits, labels=self.label))
-        tf.summary.scalar('loss',self.loss)
-        # print(self.u, self.v)
-        # self.embedding_matrix = tf.nn.l2_normalize(0.5 * (self.W_IN + self.W_OUT), axis=1,name='W_IN_W_OUT')
-        # self.emb = tf.nn.embedding_lookup(params=self.embedding_matrix, ids=self.center)
-
-        # self.emb_var = tf.Variable(self.embedding_matrix, name='embeddings')
+        self.merged = tf.summary.scalar('loss', self.loss)
 
         self.saver = tf.train.Saver()
 
@@ -129,21 +124,21 @@ class Model:
         init = tf.global_variables_initializer()
         self.sess.run(init)
 
-        writer = tf.summary.FileWriter('./graphs', self.sess.graph)
+        writer = tf.summary.FileWriter(self.LOG_DIR, self.sess.graph)
         writer.close()
         self.merged = tf.summary.merge_all()
-        self.train_writer = tf.summary.FileWriter(self.LOG_DIR ,
-                                             graph=self.sess.graph)
+        self.train_writer = tf.summary.FileWriter(self.LOG_DIR,
+                                                  graph=self.sess.graph)
 
     def train(self, epochs=10):
         for i in range(epochs):
             batch = self.vocab.get_next_batch()
             center, words, labels = batch[:, 0], batch[:, 1], batch[:, 2]
-            _, loss,merged = self.sess.run(
-                [self.optimizer, self.loss,c],
+            _, loss, merged, _ = self.sess.run(
+                [self.optimizer, self.loss, self.merged, self.emb],
                 feed_dict={self.center: center, self.word: words, self.label: labels})
-            print('loss', loss)
-            self.train_writer.add_summary(merged,i)
+            print(loss)
+            self.train_writer.add_summary(merged, i)
 
         self.saver.save(self.sess, os.path.join(self.LOG_DIR, 'model.ckpt'))
         config = projector.ProjectorConfig()
@@ -152,18 +147,16 @@ class Model:
         embedding.tensor_name = 'embeddings/W_IN'
         # Link this tensor to its metadata file (e.g. labels).
         embedding.metadata_path = 'metadata.tsv'
+
         embedding = config.embeddings.add()
         embedding.tensor_name = 'embeddings/W_OUT'
         # Link this tensor to its metadata file (e.g. labels).
         embedding.metadata_path = 'metadata.tsv'
-        # # Saves a config file that TensorBoard will read during startup.
+        # # Saves a config file that TensorBoard will read during startup
 
-        # embedding = config.embeddings.add()
-        # embedding.tensor_name = 'embeddings/W_IN_W_OUT'
-        # # Link this tensor to its metadata file (e.g. labels).
-        # embedding.metadata_path = 'metadata.tsv'
 
         projector.visualize_embeddings(tf.summary.FileWriter(self.LOG_DIR), config)
+
     def log(self):
         pass
 
