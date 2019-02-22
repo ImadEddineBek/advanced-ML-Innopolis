@@ -82,8 +82,17 @@ class Vocabulary:
     def is_most_common(self, word):
         return word in self.words
 
+
 class Model:
     def __init__(self):
+        pass
+
+    def train(self):
+        pass
+
+    def log(self):
+        pass
+
 
 def main():
     vocab = Vocabulary("wikipedia_sample_tiny.txt", 50)
