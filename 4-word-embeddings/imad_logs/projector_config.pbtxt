@@ -1,0 +1,8 @@
+embeddings {
+  tensor_name: "embeddings/W_IN"
+  metadata_path: "./metadata.tsv"
+}
+embeddings {
+  tensor_name: "embeddings/W_OUT"
+  metadata_path: "./metadata.tsv"
+}
