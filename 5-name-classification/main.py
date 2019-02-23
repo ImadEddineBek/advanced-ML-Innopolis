@@ -830,5 +830,214 @@ def run_neural_network_embeddoing_avg_2():
     np.save('accuracies_emb_neural.npy', np.array(accuracies))
 
 
-run_neural_network_embeddoing_avg_2()
+# run_neural_network_embeddoing_avg_2()
 
+
+def build_neural_netwrok_embedding_avg_3(emb_size, vocab_size, T, learning_rate=0.001):
+    with tf.name_scope('avg_network1'):
+        pad_vector = tf.zeros(shape=(1, emb_size), dtype=tf.float32)
+        symbol_embedding = tf.get_variable('symbol_embeddings', shape=(vocab_size, emb_size), dtype=tf.float32)
+
+        symbol_embedding = tf.concat([pad_vector, symbol_embedding], axis=0)
+
+        input_ = tf.placeholder(shape=[None, T], dtype=tf.int32)
+        labels_ = tf.placeholder(shape=[None, 1], dtype=tf.float32)
+
+        embedded = tf.nn.embedding_lookup(symbol_embedding, input_)
+
+        filter_ = tf.get_variable("filter", shape=(1, T, 1))
+        filtered = tf.reduce_mean(embedded * filter_, axis=1)
+
+        layer1 = tf.layers.dense(inputs=filtered, units=20, activation=tf.nn.leaky_relu)
+        layer2 = tf.layers.dense(inputs=layer1, units=12, activation=tf.nn.sigmoid)
+        layer3 = tf.layers.dense(inputs=layer2, units=20, activation=tf.nn.leaky_relu)
+        layer4 = tf.layers.dense(inputs=layer3, units=12, activation=tf.nn.leaky_relu)
+        logits = tf.layers.dense(layer4, 1)
+
+        classify = tf.nn.sigmoid(logits)
+
+        loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels_), axis=0)
+
+        train = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss)
+        # train = tf.contrib.opt.LazyAdamOptimizer(learning_rate).minimize(loss)
+
+        print("trainable parameters:", np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
+
+        return {
+            'train': train,
+            'input': input_,
+            'labels': labels_,
+            'loss': loss,
+            'classify': classify
+        }
+
+
+def run_neural_network_embeddoing_avg_3():
+    terminals = build_neural_netwrok_embedding_avg_3(letter_embedding_size, len(voc), max_len)
+
+    train_ = terminals['train']
+    input_ = terminals['input']
+    labels_ = terminals['labels']
+    loss_ = terminals['loss']
+    classify_ = terminals['classify']
+    epochs = 100
+    losses = []
+    accuracies = []
+
+    def evaluate(tf_session, tf_loss, tf_classify, data, labels):
+        """
+        Evaluate loss and accuracy on a single minibatch
+        :param tf_session: current opened session
+        :param tf_loss: tensor for calculating loss
+        :param tf_classify: tensor for calculating sigmoid activations
+        :param data: data from the current batch
+        :param labels: labels from the current batch
+        :return: loss_value, accuracy_value
+        """
+
+        loss_val, predict = tf_session.run([tf_loss, tf_classify], {
+            input_: data,
+            labels_: labels
+        })
+        acc_val = accuracy_score(labels, np.where(predict > 0.5, 1, 0))
+
+        return loss_val, acc_val
+
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+
+        for e in range(epochs):
+            for batch in batches:
+                names, labels = batch
+                # print(names.shape)
+                # names = names.reshape(names.shape[0],-1)
+                # print(names.shape)
+                sess.run([train_], {
+                    input_: names,
+                    labels_: labels
+                })
+
+            # Performance on the first training batch
+            # but the first batch contains only the shortest names
+            # comparing different batches can be used to see how zero paddign affects the performance
+            names, labels = batches[0]
+            train_loss, train_acc = evaluate(sess, loss_, classify_, names, labels)
+
+            # Performance on the test set
+            test_loss, test_acc = evaluate(sess, loss_, classify_, test_data, test_labels)
+            losses.append(train_loss)
+            accuracies.append(test_acc)
+
+            print("Epoch %d, train loss %.5f, train acc %.5f, test loss %.5f, test accuracy %.5f" % (
+                e, train_loss, train_acc, test_loss, test_acc))
+
+    np.save('losses_emb_neural.npy', np.array(losses))
+    np.save('accuracies_emb_neural.npy', np.array(accuracies))
+
+
+run_neural_network_embeddoing_avg_3()
+
+
+def build_neural_netwrok_embedding_avg_4(emb_size, vocab_size, T, learning_rate=0.001):
+    with tf.name_scope('avg_network2'):
+        pad_vector = tf.zeros(shape=(1, emb_size), dtype=tf.float32)
+        symbol_embedding = tf.get_variable('symbol_embeddings', shape=(vocab_size, emb_size), dtype=tf.float32)
+
+        symbol_embedding = tf.concat([pad_vector, symbol_embedding], axis=0)
+
+        input_ = tf.placeholder(shape=[None, T], dtype=tf.int32)
+        labels_ = tf.placeholder(shape=[None, 1], dtype=tf.float32)
+
+        embedded = tf.nn.embedding_lookup(symbol_embedding, input_)
+        embedded = tf.nn.embedding_lookup(symbol_embedding, input_)
+
+        filter_ = tf.get_variable("filter", shape=(1, T, 1))
+        filtered = tf.reduce_mean(embedded * filter_, axis=2)
+        layer1 = tf.layers.dense(inputs=filtered, units=20, activation=tf.nn.leaky_relu)
+        layer2 = tf.layers.dense(inputs=layer1, units=12, activation=tf.nn.sigmoid)
+        layer3 = tf.layers.dense(inputs=layer2, units=20, activation=tf.nn.leaky_relu)
+        layer4 = tf.layers.dense(inputs=layer3, units=12, activation=tf.nn.leaky_relu)
+        logits = tf.layers.dense(layer4, 1)
+
+        classify = tf.nn.sigmoid(logits)
+
+        loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels_), axis=0)
+
+        train = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss)
+        # train = tf.contrib.opt.LazyAdamOptimizer(learning_rate).minimize(loss)
+
+        print("trainable parameters:", np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
+
+        return {
+            'train': train,
+            'input': input_,
+            'labels': labels_,
+            'loss': loss,
+            'classify': classify
+        }
+
+
+def run_neural_network_embeddoing_avg_4():
+    terminals = build_neural_netwrok_embedding_avg_4(letter_embedding_size, len(voc), max_len)
+
+    train_ = terminals['train']
+    input_ = terminals['input']
+    labels_ = terminals['labels']
+    loss_ = terminals['loss']
+    classify_ = terminals['classify']
+    epochs = 100
+    losses = []
+    accuracies = []
+
+    def evaluate(tf_session, tf_loss, tf_classify, data, labels):
+        """
+        Evaluate loss and accuracy on a single minibatch
+        :param tf_session: current opened session
+        :param tf_loss: tensor for calculating loss
+        :param tf_classify: tensor for calculating sigmoid activations
+        :param data: data from the current batch
+        :param labels: labels from the current batch
+        :return: loss_value, accuracy_value
+        """
+
+        loss_val, predict = tf_session.run([tf_loss, tf_classify], {
+            input_: data,
+            labels_: labels
+        })
+        acc_val = accuracy_score(labels, np.where(predict > 0.5, 1, 0))
+
+        return loss_val, acc_val
+
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+
+        for e in range(epochs):
+            for batch in batches:
+                names, labels = batch
+                # print(names.shape)
+                # names = names.reshape(names.shape[0],-1)
+                # print(names.shape)
+                sess.run([train_], {
+                    input_: names,
+                    labels_: labels
+                })
+
+            # Performance on the first training batch
+            # but the first batch contains only the shortest names
+            # comparing different batches can be used to see how zero paddign affects the performance
+            names, labels = batches[0]
+            train_loss, train_acc = evaluate(sess, loss_, classify_, names, labels)
+
+            # Performance on the test set
+            test_loss, test_acc = evaluate(sess, loss_, classify_, test_data, test_labels)
+            losses.append(train_loss)
+            accuracies.append(test_acc)
+
+            print("Epoch %d, train loss %.5f, train acc %.5f, test loss %.5f, test accuracy %.5f" % (
+                e, train_loss, train_acc, test_loss, test_acc))
+
+    np.save('losses_emb_neural.npy', np.array(losses))
+    np.save('accuracies_emb_neural.npy', np.array(accuracies))
+
+
+# run_neural_network_embeddoing_avg_4()
