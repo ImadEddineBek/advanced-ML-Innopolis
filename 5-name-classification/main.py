@@ -33,6 +33,7 @@ p_train_data.Name = p_train_data.Name.str.lower()
 p_test_data.Name = p_test_data.Name.str.lower()
 
 print(p_train_data.describe())
+print(p_test_data.describe())
 print(p_train_data[p_train_data.Name == 'Trelynn'])
 
 # Convert data to numpy arrays
