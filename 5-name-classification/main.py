@@ -191,26 +191,33 @@ def evaluate(tf_session, tf_loss, tf_classify, data, labels):
 
     return loss_val, acc_val
 
-# with tf.Session() as sess:
-#     sess.run(tf.global_variables_initializer())
-#
-#     for e in range(epochs):
-#         for batch in batches:
-#             names, labels = batch
-#
-#             sess.run([train_], {
-#                 input_: names,
-#                 labels_: labels
-#             })
-#
-#         # Performance on the first training batch
-#         # but the first batch contains only the shortest names
-#         # comparing different batches can be used to see how zero paddign affects the performance
-#         names, labels = batches[0]
-#         train_loss, train_acc = evaluate(sess, loss_, classify_, names, labels)
-#
-#         # Performance on the test set
-#         test_loss, test_acc = evaluate(sess, loss_, classify_, test_data, test_labels)
-#
-#         print("Epoch %d, train loss %.5f, train acc %.5f, test loss %.5f, test accuracy %.5f" % (
-#         e, train_loss, train_acc, test_loss, test_acc))
+
+def base_line_lstm():
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+
+        for e in range(epochs):
+            for batch in batches:
+                names, labels = batch
+
+                sess.run([train_], {
+                    input_: names,
+                    labels_: labels
+                })
+
+            # Performance on the first training batch
+            # but the first batch contains only the shortest names
+            # comparing different batches can be used to see how zero paddign affects the performance
+            names, labels = batches[0]
+            train_loss, train_acc = evaluate(sess, loss_, classify_, names, labels)
+
+            # Performance on the test set
+            test_loss, test_acc = evaluate(sess, loss_, classify_, test_data, test_labels)
+
+            print("Epoch %d, train loss %.5f, train acc %.5f, test loss %.5f, test accuracy %.5f" % (
+                e, train_loss, train_acc, test_loss, test_acc))
+
+
+base_line_lstm()
+
+def build_neural_netwrok():
