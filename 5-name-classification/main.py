@@ -20,8 +20,8 @@ data_path = sys.argv[1]
 test_data_path = sys.argv[2]
 
 # Set parameters
-letter_embedding_size = 5
-lstm_hidden_size = 5
+letter_embedding_size = 3
+lstm_hidden_size = 3
 epochs = 100
 minibatch_size = 256
 
@@ -222,8 +222,86 @@ base_line_lstm()
 
 
 def build_neural_netwrok(vocab_size, T, learning_rate=0.001):
-    input_ = tf.placeholder(shape=[None, T * vocab_size], dtype=tf.int32)
+    input_ = tf.placeholder(shape=[None, T], dtype=tf.float32)
     labels_ = tf.placeholder(shape=[None, 1], dtype=tf.float32)
-    layer1 = tf.layers.dense(name="l1", inputs=input_, units=52, activation=tf.nn.sigmoid)
-    layer2 = tf.layers.dense(name="l1", inputs=layer1, units=12, activation=tf.nn.sigmoid)
-    logits = tf.layers.dense(layer2, 1, activation=tf.nn.sigmoid)
+    layer1 = tf.layers.dense(name="l1", inputs=input_, units=20, activation=tf.nn.leaky_relu)
+    layer2 = tf.layers.dense(name="l2", inputs=layer1, units=12, activation=tf.nn.sigmoid)
+    layer3 = tf.layers.dense(name="l3", inputs=layer2, units=20, activation=tf.nn.leaky_relu)
+    layer4 = tf.layers.dense(name="l4", inputs=layer3, units=12, activation=tf.nn.leaky_relu)
+    logits = tf.layers.dense(layer4, 1)
+
+    classify = tf.nn.sigmoid(logits)
+
+    loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels_), axis=0)
+
+    train = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(loss)
+    # train = tf.contrib.opt.LazyAdamOptimizer(learning_rate).minimize(loss)
+
+    print("trainable parameters:", np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
+
+    return {
+        'train': train,
+        'input': input_,
+        'labels': labels_,
+        'loss': loss,
+        'classify': classify
+    }
+
+
+def run_neural_network():
+    terminals = build_neural_netwrok(len(voc), max_len)
+
+    train_ = terminals['train']
+    input_ = terminals['input']
+    labels_ = terminals['labels']
+    loss_ = terminals['loss']
+    classify_ = terminals['classify']
+    epochs = 1000
+
+    def evaluate(tf_session, tf_loss, tf_classify, data, labels):
+        """
+        Evaluate loss and accuracy on a single minibatch
+        :param tf_session: current opened session
+        :param tf_loss: tensor for calculating loss
+        :param tf_classify: tensor for calculating sigmoid activations
+        :param data: data from the current batch
+        :param labels: labels from the current batch
+        :return: loss_value, accuracy_value
+        """
+
+        loss_val, predict = tf_session.run([tf_loss, tf_classify], {
+            input_: data,
+            labels_: labels
+        })
+        acc_val = accuracy_score(labels, np.where(predict > 0.5, 1, 0))
+
+        return loss_val, acc_val
+
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+
+        for e in range(epochs):
+            for batch in batches:
+                names, labels = batch
+                # print(names.shape)
+                # names = names.reshape(names.shape[0],-1)
+                # print(names.shape)
+                sess.run([train_], {
+                    input_: names,
+                    labels_: labels
+                })
+
+            # Performance on the first training batch
+            # but the first batch contains only the shortest names
+            # comparing different batches can be used to see how zero paddign affects the performance
+            names, labels = batches[0]
+            train_loss, train_acc = evaluate(sess, loss_, classify_, names, labels)
+
+            # Performance on the test set
+            test_loss, test_acc = evaluate(sess, loss_, classify_, test_data, test_labels)
+
+            print("Epoch %d, train loss %.5f, train acc %.5f, test loss %.5f, test accuracy %.5f" % (
+                e, train_loss, train_acc, test_loss, test_acc))
+
+
+run_neural_network()
