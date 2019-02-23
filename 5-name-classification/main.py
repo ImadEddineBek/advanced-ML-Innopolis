@@ -935,7 +935,7 @@ def run_neural_network_embeddoing_avg_3():
     np.save('accuracies_emb_neural.npy', np.array(accuracies))
 
 
-run_neural_network_embeddoing_avg_3()
+# run_neural_network_embeddoing_avg_3()
 
 
 def build_neural_netwrok_embedding_avg_4(emb_size, vocab_size, T, learning_rate=0.001):
@@ -1040,4 +1040,4 @@ def run_neural_network_embeddoing_avg_4():
     np.save('accuracies_emb_neural.npy', np.array(accuracies))
 
 
-# run_neural_network_embeddoing_avg_4()
+run_neural_network_embeddoing_avg_4()
