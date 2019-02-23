@@ -220,4 +220,10 @@ def base_line_lstm():
 
 base_line_lstm()
 
-def build_neural_netwrok():
+
+def build_neural_netwrok(vocab_size, T, learning_rate=0.001):
+    input_ = tf.placeholder(shape=[None, T * vocab_size], dtype=tf.int32)
+    labels_ = tf.placeholder(shape=[None, 1], dtype=tf.float32)
+    layer1 = tf.layers.dense(name="l1", inputs=input_, units=52, activation=tf.nn.sigmoid)
+    layer2 = tf.layers.dense(name="l1", inputs=layer1, units=12, activation=tf.nn.sigmoid)
+    logits = tf.layers.dense(layer2, 1, activation=tf.nn.sigmoid)
