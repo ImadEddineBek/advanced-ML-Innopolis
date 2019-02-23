@@ -29,6 +29,12 @@ minibatch_size = 256
 p_train_data = pandas.read_csv(data_path)
 p_test_data = pandas.read_csv(test_data_path)
 
+p_train_data.Name = p_train_data.Name.str.lower()
+p_test_data.Name = p_test_data.Name.str.lower()
+
+print(p_train_data.describe())
+print(p_train_data[p_train_data.Name == 'Trelynn'])
+
 # Convert data to numpy arrays
 train = p_train_data.to_numpy()
 test = p_test_data.to_numpy()
@@ -151,7 +157,9 @@ def create_model(emb_size, vocab_size, lstm_hidden_size, T, learning_rate=0.001)
 # Find longest name length
 max_len = p_train_data['Name'].str.len().max()
 
+print(max_len)
 train_data, train_labels, voc = transform_data(train, max_len)
+print(train[0], train_data[0], train_labels[0], voc)
 test_data, test_labels, _ = transform_data(test, max_len)
 batches = get_minibatches(train_data, train_labels, minibatch_size)
 terminals = create_model(letter_embedding_size, len(voc), lstm_hidden_size, max_len)
@@ -182,27 +190,26 @@ def evaluate(tf_session, tf_loss, tf_classify, data, labels):
 
     return loss_val, acc_val
 
-
-with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-
-    for e in range(epochs):
-        for batch in batches:
-            names, labels = batch
-
-            sess.run([train_], {
-                input_: names,
-                labels_: labels
-            })
-
-        # Performance on the first training batch
-        # but the first batch contains only the shortest names
-        # comparing different batches can be used to see how zero paddign affects the performance
-        names, labels = batches[0]
-        train_loss, train_acc = evaluate(sess, loss_, classify_, names, labels)
-
-        # Performance on the test set
-        test_loss, test_acc = evaluate(sess, loss_, classify_, test_data, test_labels)
-
-        print("Epoch %d, train loss %.5f, train acc %.5f, test loss %.5f, test accuracy %.5f" % (
-        e, train_loss, train_acc, test_loss, test_acc))
+# with tf.Session() as sess:
+#     sess.run(tf.global_variables_initializer())
+#
+#     for e in range(epochs):
+#         for batch in batches:
+#             names, labels = batch
+#
+#             sess.run([train_], {
+#                 input_: names,
+#                 labels_: labels
+#             })
+#
+#         # Performance on the first training batch
+#         # but the first batch contains only the shortest names
+#         # comparing different batches can be used to see how zero paddign affects the performance
+#         names, labels = batches[0]
+#         train_loss, train_acc = evaluate(sess, loss_, classify_, names, labels)
+#
+#         # Performance on the test set
+#         test_loss, test_acc = evaluate(sess, loss_, classify_, test_data, test_labels)
+#
+#         print("Epoch %d, train loss %.5f, train acc %.5f, test loss %.5f, test accuracy %.5f" % (
+#         e, train_loss, train_acc, test_loss, test_acc))
