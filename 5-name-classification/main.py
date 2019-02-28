@@ -16,29 +16,31 @@ if len(sys.argv) != 3:
     print("\tmain.py train.csv test.csv")
     sys.exit()
 
-data_path = sys.argv[1]
-test_data_path = sys.argv[2]
 
-# Set parameters
-letter_embedding_size = 4
-lstm_hidden_size = 10
-epochs = 0
-minibatch_size = 256
-
-# Load data
-p_train_data = pandas.read_csv(data_path)
-p_test_data = pandas.read_csv(test_data_path)
-
-p_train_data.Name = p_train_data.Name.str.lower()
-p_test_data.Name = p_test_data.Name.str.lower()
-
-print(p_train_data.describe())
-print(p_test_data.describe())
-print(p_train_data[p_train_data.Name == 'trelynn'])
-
-# Convert data to numpy arrays
-train = p_train_data.to_numpy()
-test = p_test_data.to_numpy()
+#
+# data_path = sys.argv[1]
+# test_data_path = sys.argv[2]
+#
+# # Set parameters
+# letter_embedding_size = 4
+# lstm_hidden_size = 10
+# epochs = 0
+# minibatch_size = 256
+#
+# # Load data
+# p_train_data = pandas.read_csv(data_path)
+# p_test_data = pandas.read_csv(test_data_path)
+#
+# p_train_data.Name = p_train_data.Name.str.lower()
+# p_test_data.Name = p_test_data.Name.str.lower()
+#
+# print(p_train_data.describe())
+# print(p_test_data.describe())
+# print(p_train_data[p_train_data.Name == 'trelynn'])
+#
+# # Convert data to numpy arrays
+# train = p_train_data.to_numpy()
+# test = p_test_data.to_numpy()
 
 
 # Sort by name length
@@ -1056,7 +1058,15 @@ def three_label_data(data):
 # train = three_label_data(train)
 # train = pandas.DataFrame(data=train, columns=['Name', 'Sex'])
 
-test = three_label_data(test)
-test = pandas.DataFrame(data=test, columns=['Name', 'Sex'])
-test.to_csv('new_test.csv')
-print()
+test = pandas.read_csv('new_test.csv', usecols=['Name', 'Sex'])
+train = pandas.read_csv('new_train.csv', usecols=['Name', 'Sex'])
+
+# print(train)
+# print(test)
+counts = train.Sex.value_counts()
+import matplotlib.pyplot as plt
+
+print(counts.index)
+plt.bar(counts.index,counts.values)
+plt.title("train data")
+plt.show()
