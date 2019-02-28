@@ -1054,5 +1054,5 @@ def three_label_data(data):
 
 
 train = three_label_data(train)
-
-print(pandas.DataFrame(data=train))
+train = pandas.DataFrame(data=train, columns=['Name', 'Sex'])
+print()
