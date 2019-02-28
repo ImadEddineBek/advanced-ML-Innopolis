@@ -1053,6 +1053,10 @@ def three_label_data(data):
     return data
 
 
-train = three_label_data(train)
-train = pandas.DataFrame(data=train, columns=['Name', 'Sex'])
+# train = three_label_data(train)
+# train = pandas.DataFrame(data=train, columns=['Name', 'Sex'])
+
+test = three_label_data(test)
+test = pandas.DataFrame(data=test, columns=['Name', 'Sex'])
+test.to_csv('new_test.csv')
 print()
