@@ -34,15 +34,16 @@ p_test_data.Name = p_test_data.Name.str.lower()
 
 print(p_train_data.describe())
 print(p_test_data.describe())
-print(p_train_data[p_train_data.Name == 'Trelynn'])
+print(p_train_data[p_train_data.Name == 'trelynn'])
 
 # Convert data to numpy arrays
 train = p_train_data.to_numpy()
 test = p_test_data.to_numpy()
 
+
 # Sort by name length
 # np.random.shuffle(train)
-train = np.stack(sorted(list(train), key=lambda x: len(x[0])))
+# train = np.stack(sorted(list(train), key=lambda x: len(x[0])))
 
 
 def transform_data(data, max_len):
@@ -158,13 +159,13 @@ def create_model(emb_size, vocab_size, lstm_hidden_size, T, learning_rate=0.002)
 
 
 # Find longest name length
-max_len = p_train_data['Name'].str.len().max()
-
-print(max_len)
-train_data, train_labels, voc = transform_data(train, max_len)
-print(train[0], train_data[0], train_labels[0], voc)
-test_data, test_labels, _ = transform_data(test, max_len)
-batches = get_minibatches(train_data, train_labels, minibatch_size)
+# max_len = p_train_data['Name'].str.len().max()
+#
+# print(max_len)
+# train_data, train_labels, voc = transform_data(train, max_len)
+# print(train[0], train_data[0], train_labels[0], voc)
+# test_data, test_labels, _ = transform_data(test, max_len)
+# batches = get_minibatches(train_data, train_labels, minibatch_size)
 
 
 # terminals = create_model(letter_embedding_size, len(voc), lstm_hidden_size, max_len)
@@ -1040,6 +1041,18 @@ def run_neural_network_embeddoing_avg_4():
     np.save('accuracies_emb_neural.npy', np.array(accuracies))
 
 
-run_neural_network_embeddoing_avg_4()
+# run_neural_network_embeddoing_avg_4()
+
 
 # TODO
+
+def three_label_data(data):
+    names = data[:, 0]
+    non_unique = np.array([len(np.where(names == n)[0]) != 1 for n in names])
+    data[non_unique, 1] = 'B'
+    return data
+
+
+train = three_label_data(train)
+
+print(pandas.DataFrame(data=train))
