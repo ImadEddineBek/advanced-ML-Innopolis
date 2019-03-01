@@ -29,8 +29,8 @@ test_data_path = "new_test.csv"  # sys.argv[2]
 # Set parameters
 letter_embedding_size = 4
 lstm_hidden_size = 4
-epochs = 100
-minibatch_size = 265
+epochs = 500
+minibatch_size = 1000
 
 # Load data
 p_train_data = pandas.read_csv(data_path, usecols=['Name', 'Sex']).dropna()
@@ -146,7 +146,7 @@ def get_minibatches(names, labels, mb_size):
     return batches
 
 
-def create_model(emb_size, vocab_size, lstm_hidden_size, T, learning_rate=0.001):
+def create_model(emb_size, vocab_size, lstm_hidden_size, T, learning_rate=0.0005):
     """
     Assemble tensorflow LSTM model for gender recognition
     :param emb_size: size of trainable letter embeddings
@@ -182,7 +182,7 @@ def create_model(emb_size, vocab_size, lstm_hidden_size, T, learning_rate=0.001)
         tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=tf.one_hot(tf.reshape(labels_, [-1]), 3, dtype=tf.int32), dim=1))
 
     # train = tf.train.AdamOptimizer(learning_rate).minimize(loss)
-    train = tf.contrib.opt.LazyAdamOptimizer(learning_rate).minimize(loss)
+    train = tf.train.AdamOptimizer(learning_rate,beta1=0.5).minimize(loss)
 
     print("trainable parameters:", np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]))
 
@@ -251,7 +251,7 @@ def base_line_lstm():
                     labels_: labels
                 })
 
-            names, labels = batches[randint(0, len(batches) - 1)]
+            names, labels = batches[0]#randint(0, len(batches) - 1)]
             train_loss, train_acc = evaluate(sess, loss_, classify_, names, labels)
 
             # Performance on the test set
