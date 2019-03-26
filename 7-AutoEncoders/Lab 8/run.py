@@ -1,3 +1,5 @@
+import sys
+
 from utils import load_data, get_current_time, create_dirs, \
     create_minibatches, write_to_tensorboard, \
     create_summary_and_projector, create_evaluation_tensor
@@ -11,7 +13,7 @@ import os
 learning_rate = 0.001
 minibatch_size = 125
 num_epochs = 20
-latent_space_size = 30
+latent_space_size = 48
 log_dir = "log"
 current_run = get_current_time()
 
@@ -40,21 +42,34 @@ def create_model(input_shape):
 
     ### input is a placeholder for your data
     ### set up shape and dtype
-    input = tf.placeholder(???)
-    l0 = ???
-    l1 = ???
-    l2 = ???
-    l3 = ???
+    input = tf.placeholder(tf.float32, [None, h, w, c], name='input')
+    l1_0 = tf.layers.conv2d(inputs=input, filters=32, kernel_size=(3, 3), padding='same', activation=tf.nn.relu)
+    l1_1 = tf.layers.max_pooling2d(l1_0, pool_size=(2, 2), strides=(2, 2), padding='same')
+    l1_2 = tf.layers.conv2d(inputs=l1_1, filters=32, kernel_size=(3, 3), padding='same', activation=tf.nn.relu)
+    l1_3 = tf.layers.max_pooling2d(l1_2, pool_size=(2, 2), strides=(2, 2), padding='same')
+    l1_4 = tf.layers.conv2d(inputs=l1_3, filters=16, kernel_size=(3, 3), padding='same', activation=tf.nn.relu)
+    l1_5 = tf.contrib.layers.flatten(tf.layers.max_pooling2d(l1_4, pool_size=(2, 2), strides=(2, 2), padding='same'))
+    print(l1_5.shape)
+
     ### encoding is a bottle neck layer of the NN
     ### this layer has no activation
-    encoding = tf.layers.dense(l3, units=latent_space_size, activation=None, name="encoded")
-    l5 = ???
-    l6 = ???
-    l7 = ???
-    l8 = ???
+    encoding = tf.layers.dense(l1_5, units=latent_space_size, activation=None, name="encoded")
+    print(encoding.shape)
+    l2_0 = tf.reshape(encoding, shape=[-1, 4, 4, 3])
+    print(l2_0.shape)
+    print(c)
+    l2_1 = tf.layers.conv2d_transpose(l2_0, filters=3, kernel_size=(7, 7))
+    print(l2_1.shape)
+    l2_2 = tf.layers.conv2d_transpose(l2_1, filters=3, kernel_size=(7, 7))
+    print(l2_2.shape)
+    l2_3 = tf.layers.conv2d_transpose(l2_2, filters=3, kernel_size=(7, 7))
+    print(l2_3.shape)
+    l2_4 = tf.layers.conv2d_transpose(l2_3, filters=c, kernel_size=(7, 7))
+    print(l2_4.shape)
+
 
     ### any layer without activation could be named as logits
-    logits = tf.reshape(l8, [-1, h, w, c], name="logits")
+    logits = tf.reshape(l2_4, [-1, h, w, c], name="logits")
     decode = tf.nn.sigmoid(logits, name="decoded")
     loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=input, logits=logits, name='loss')
     cost = tf.reduce_mean(loss, name="cost")
@@ -67,6 +82,7 @@ def create_model(input_shape):
              'dec': decode
              }
     return model
+
 
 # Create model and tensors for evaluation
 input_shape = (28, 28, 1)
@@ -101,5 +117,5 @@ with tf.Session() as sess:
         # save trained model
         saver.save(sess, os.path.join(run_path, "model.ckpt"))
 
-        print("Epoch: {}/{}".format(e+1, num_epochs),
+        print("Epoch: {}/{}".format(e + 1, num_epochs),
               "batch cost: {:.4f}".format(batch_cost))
